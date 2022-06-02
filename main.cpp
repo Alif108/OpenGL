@@ -7,12 +7,14 @@
 
 #define pi (2*acos(0.0))
 #define ANGLE_OF_ROTATION 3.0
+#define MAX_RADIUS 30
 
 double cameraHeight;
 double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
+double radius;
 
 struct point
 {
@@ -151,8 +153,8 @@ void drawCircle(double radius,int segments)
     {
         glBegin(GL_LINES);
         {
-			glVertex3f(points[i].x,points[i].y,0);
-			glVertex3f(points[i+1].x,points[i+1].y,0);
+			glVertex3f(points[i].x,points[i].y, 0);
+			glVertex3f(points[i+1].x,points[i+1].y, 0);
         }
         glEnd();
     }
@@ -187,18 +189,18 @@ void drawCone(double radius,double height,int segments)
     }
 }
 
-
+/*
 void drawSphere(double radius,int slices,int stacks)
 {
 	struct point points[100][100];
 	int i,j;
 	double h,r;
 	//generate points
-	for(i=0;i<=stacks;i++)
+	for(i=0; i<=stacks; i++)
 	{
 		h=radius*sin(((double)i/(double)stacks)*(pi/2));
 		r=radius*cos(((double)i/(double)stacks)*(pi/2));
-		for(j=0;j<=slices;j++)
+		for(j=0; j<=slices; j++)
 		{
 			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
 			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
@@ -206,17 +208,19 @@ void drawSphere(double radius,int slices,int stacks)
 		}
 	}
 	//draw quads using generated points
-	for(i=0;i<stacks;i++)
+	for(i=0; i<stacks; i++)
 	{
-        glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+		glColor3f(1, 0 ,0);
 		for(j=0;j<slices;j++)
 		{
 			glBegin(GL_QUADS);{
 			    //upper hemisphere
-				glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
-				glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+				glVertex3f(points[i][j].x, points[i][j].y, points[i][j].z);
+				glVertex3f(points[i][j+1]. x,points[i][j+1].y, points[i][j+1].z);
 				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
 				glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+
                 //lower hemisphere
                 glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
 				glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
@@ -226,7 +230,144 @@ void drawSphere(double radius,int slices,int stacks)
 		}
 	}
 }
+*/
 
+void drawSphereOneEighth(double radius,int slices,int stacks)
+{
+	struct point points[100][100];
+	int i,j;
+	double h,r;
+
+	//generate points
+	for(i=0; i<=stacks; i++)
+	{
+		h=radius*sin(((double)i/(double)stacks)*(pi/2));
+		r=radius*cos(((double)i/(double)stacks)*(pi/2));
+		for(j=0; j<=slices; j++)
+		{
+			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
+			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
+			points[i][j].z=h;
+		}
+	}
+
+	//draw quads using generated points
+	for(i=0; i<stacks; i++)
+	{
+        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+		glColor3f(1, 0 ,0);
+
+		for(j=0; j<slices/4; j++)               /// only 1/4 th of the upper hemisphere
+		{
+			glBegin(GL_QUADS);{
+			    //upper hemisphere
+				glVertex3f(points[i][j].x, points[i][j].y, points[i][j].z);
+				glVertex3f(points[i][j+1]. x,points[i][j+1].y, points[i][j+1].z);
+				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+				glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+			}glEnd();
+		}
+	}
+}
+
+/// this function draws the 6 sides of the cube
+void drawSides()
+{
+    glColor3f(0.0f, 0.0f, 1.0f);
+
+    glPushMatrix();
+    glTranslatef(0, 0, +MAX_RADIUS);
+    drawSquare(radius);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0, 0, -MAX_RADIUS);
+    drawSquare(radius);
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotatef(90, 0, -1, 0);
+    glTranslatef(0, 0, +MAX_RADIUS);
+    drawSquare(radius);
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotatef(90, 0, 1, 0);
+    glTranslatef(0, 0, +MAX_RADIUS);
+    drawSquare(radius);
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotatef(90, 1, 0, 0);
+    glTranslatef(0, 0, +MAX_RADIUS);
+    drawSquare(radius);
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotatef(90, -1, 0, 0);
+    glTranslatef(0, 0, +MAX_RADIUS);
+    drawSquare(radius);
+    glPopMatrix();
+}
+
+void drawWholeSphere()
+{
+    glPushMatrix();
+    glTranslatef(MAX_RADIUS-radius, MAX_RADIUS-radius, MAX_RADIUS-radius);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(MAX_RADIUS-radius, -(MAX_RADIUS-radius), MAX_RADIUS-radius);
+    glRotatef(90, 1, 0, 0);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(MAX_RADIUS-radius, -(MAX_RADIUS-radius), -(MAX_RADIUS-radius));
+    glRotatef(180, 1, 0, 0);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(MAX_RADIUS-radius, MAX_RADIUS-radius, -(MAX_RADIUS-radius));
+    glRotatef(270, 1, 0, 0);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(-(MAX_RADIUS-radius), MAX_RADIUS-radius, MAX_RADIUS-radius);
+    glRotatef(-90, 0, 1, 0);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(-(MAX_RADIUS-radius), MAX_RADIUS-radius, -(MAX_RADIUS-radius));
+    glRotatef(-180, 0, 1, 0);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(-(MAX_RADIUS-radius), -(MAX_RADIUS-radius), MAX_RADIUS-radius);
+    glRotatef(-180, 0, 0, 1);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glTranslatef(-(MAX_RADIUS-radius), -(MAX_RADIUS-radius), -(MAX_RADIUS-radius));
+    glRotatef(90, 1, 0, 0);
+    glRotatef(90, 1, 0, 0);
+    glRotatef(90, 0, -1, 0);
+    drawSphereOneEighth(radius, 24, 20);
+    glPopMatrix();
+}
 
 void drawSS()
 {
@@ -315,8 +456,12 @@ void specialKeyListener(int key, int x,int y){
 			break;
 
 		case GLUT_KEY_HOME:
+		    if(radius < MAX_RADIUS)
+                radius += 2;
 			break;
 		case GLUT_KEY_END:
+		    if(radius > 0)
+                radius -= 2;
 			break;
 
 		default:
@@ -396,8 +541,9 @@ void display(){
 
     //drawCone(20,50,24);
 
-	drawSphere(30,24,20);
-
+	//drawSphereOneEighth(radius, 24, 20);
+	drawWholeSphere();
+	//drawSides();
 
 	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
@@ -438,6 +584,8 @@ void init(){
 	//l.x = -1/sqrt(2);
 	//l.y = -1/sqrt(2);
 	//l.z = 0;
+
+	radius = 30;
 
 	//clear the screen
 	glClearColor(0,0,0,0);
