@@ -6,17 +6,14 @@
 #include <GL/glut.h>
 
 #define pi (2*acos(0.0))
-#define ANGLE_OF_ROTATION 3.0
-#define MAX_RADIUS 30
-#define RADIUS_RATE 1
+#define ANGLE_OF_ROTATION 3.0       // in degrees
+#define MAX_RADIUS 30               // max radius of the sphere
+#define RADIUS_RATE 1               // the increase/decrease rate of radius
 
-double cameraHeight;
-double cameraAngle;
-int drawgrid;
 int drawaxes;
-double angle;
 double radius;
 
+/*
 struct point
 {
 	double x,y,z;
@@ -80,6 +77,71 @@ struct point vector_rotate(struct point vector_to_be_rotated, struct point axis,
     struct point perpendicular = vector_cross(axis, vector_to_be_rotated);      // n x r vector
     return vector_sum(vector_scale(vector_to_be_rotated, cos(angle_to_rotate * pi/180)), vector_scale(perpendicular, sin(angle_to_rotate * pi/180)));
 }
+*/
+
+/// --------------------- Data Structures and necessary functions ---------------------- ///
+
+class point
+{
+public:
+    double x;
+    double y;
+    double z;
+
+    point operator+(const point v);                 // vector sum
+    point operator-(const point v);                 // vector subtract
+    point operator*(const double a);                // vector scale
+    point operator^(const point v);                 // vector cross product
+};
+
+point point::operator+(const point v)
+{
+    point result;
+    result.x = x + v.x;
+    result.y = y + v.y;
+    result.z = z + v.z;
+
+    return result;
+}
+
+point point::operator-(const point v)
+{
+    point result;
+    result.x = x - v.x;
+    result.y = y - v.y;
+    result.z = z - v.z;
+
+    return result;
+}
+
+point point::operator*(const double a)
+{
+    point result;
+    result.x = x * a;
+    result.y = y * a;
+    result.z = z * a;
+
+    return result;
+}
+
+point point::operator^(const point v2)
+{
+    point product;
+
+    product.x = y * v2.z - v2.y * z;
+    product.y = v2.x * z - x * v2.z;
+    product.z = x * v2.y - v2.x * y;
+
+    return product;
+}
+
+point pos;           /// position of the camera
+point u;             /// up direction
+point r;             /// right direction
+point l;             /// look direction
+
+
+/// ------------------------------ Drawing objects ---------------------------- ///
 
 void drawAxes()
 {
@@ -99,34 +161,8 @@ void drawAxes()
 	}
 }
 
-
-void drawGrid()
-{
-	int i;
-	if(drawgrid==1)
-	{
-		glColor3f(0.6, 0.6, 0.6);	//grey
-		glBegin(GL_LINES);{
-			for(i=-8;i<=8;i++){
-
-				if(i==0)
-					continue;	//SKIP the MAIN axes
-
-				//lines parallel to Y-axis
-				glVertex3f(i*10, -90, 0);
-				glVertex3f(i*10,  90, 0);
-
-				//lines parallel to X-axis
-				glVertex3f(-90, i*10, 0);
-				glVertex3f( 90, i*10, 0);
-			}
-		}glEnd();
-	}
-}
-
 void drawSquare(double a)
 {
-    //glColor3f(1.0,0.0,0.0);
 	glBegin(GL_QUADS);{
 		glVertex3f( a, a, 0);
 		glVertex3f( a,-a, 0);
@@ -135,77 +171,9 @@ void drawSquare(double a)
 	}glEnd();
 }
 
-
-void drawCircle(double radius,  int segments)
-{
-    int i;
-    struct point points[100];
-    glColor3f(0.7,0.7,0.7);
-
-    //generate points
-    for(i=0;i<=segments;i++)
-    {
-        points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
-        points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
-    }
-
-    //draw segments using generated points
-    for(i=0;i<segments;i++)
-    {
-        glBegin(GL_LINES);
-        {
-			glVertex3f(points[i].x,points[i].y, 0);
-			glVertex3f(points[i+1].x,points[i+1].y, 0);
-        }
-        glEnd();
-    }
-}
-
-
-void drawSphere(double radius,int slices,int stacks)
-{
-	struct point points[100][100];
-	int i,j;
-	double h,r;
-	//generate points
-	for(i=0; i<=stacks; i++)
-	{
-		h = radius*sin(((double)i/(double)stacks)*(pi/2));
-		r = radius*cos(((double)i/(double)stacks)*(pi/2));
-		for(j=0; j<=slices; j++)
-		{
-			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
-			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
-			points[i][j].z=h;
-		}
-	}
-	//draw quads using generated points
-	for(i=0; i<stacks; i++)
-	{
-        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
-		glColor3f(1, 0 ,0);
-		for(j=0;j<slices;j++)
-		{
-			glBegin(GL_QUADS);{
-			    //upper hemisphere
-				glVertex3f(points[i][j].x, points[i][j].y, points[i][j].z);
-				glVertex3f(points[i][j+1]. x,points[i][j+1].y, points[i][j+1].z);
-				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
-				glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
-                //lower hemisphere
-                glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
-				glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
-				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
-				glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
-			}glEnd();
-		}
-	}
-}
-
-
 void drawCylinderOneFourth(double radius, int segments)
 {
-    struct point points[100][2];
+    point points[100][2];
 
     for(int i=0; i<segments; i++)
     {
@@ -235,7 +203,7 @@ void drawCylinderOneFourth(double radius, int segments)
 
 void drawSphereOneEighth(double radius,int slices,int stacks)
 {
-	struct point points[100][100];
+	point points[100][100];
 	double h,r;
 
 	//generate points
@@ -257,7 +225,7 @@ void drawSphereOneEighth(double radius,int slices,int stacks)
 	{
 		glColor3f(0.9f, 0.9f ,0);
 
-		for(int j=0; j<slices/4; j++)               /// only 1/4 th of the upper hemisphere
+		for(int j=0; j<slices/4; j++)
 		{
 			glBegin(GL_QUADS);{
 			    //upper hemisphere
@@ -310,6 +278,7 @@ void drawSides()
     glPopMatrix();
 }
 
+/// this function draws the whole sphere with 1/8 spheres
 void drawWholeSphere()
 {
     glPushMatrix();
@@ -369,6 +338,7 @@ void drawWholeSphere()
     glPopMatrix();
 }
 
+/// this function builds the edges with cylinders
 void drawAllCylinders()
 {
     /// -------------------------- Vertical Cylinders -------------------- ///
@@ -457,32 +427,46 @@ void drawAllCylinders()
     glPopMatrix();
 }
 
+/// ---------------------- Key Functions ------------------------ ///
+
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
 		case '1':
-            l = vector_rotate(l, u, ANGLE_OF_ROTATION);
-            r = vector_cross(l, u);
+            //l = vector_rotate(l, u, ANGLE_OF_ROTATION);
+            //r = vector_cross(l, u);
+            l = l*cos(ANGLE_OF_ROTATION * pi/180) + (u^l)*sin(ANGLE_OF_ROTATION * pi/180);
+            r = l^u;
 			break;
         case '2':
-            l = vector_rotate(l, u, -ANGLE_OF_ROTATION);
-            r = vector_cross(l, u);
+            //l = vector_rotate(l, u, -ANGLE_OF_ROTATION);
+            //r = vector_cross(l, u);
+            l = l*cos(-ANGLE_OF_ROTATION * pi/180) + (u^l)*sin(-ANGLE_OF_ROTATION * pi/180);
+            r = l^u;
 			break;
         case '3':
-            l = vector_rotate(l, r, ANGLE_OF_ROTATION);
-            u = vector_cross(r, l);
+            //l = vector_rotate(l, r, ANGLE_OF_ROTATION);
+            //u = vector_cross(r, l);
+            l = l*cos(ANGLE_OF_ROTATION * pi/180) + (r^l)*sin(ANGLE_OF_ROTATION * pi/180);
+            u = r^l;
             break;
         case '4':
-            l = vector_rotate(l, r, -ANGLE_OF_ROTATION);
-            u = vector_cross(r, l);
+            //l = vector_rotate(l, r, -ANGLE_OF_ROTATION);
+            //u = vector_cross(r, l);
+            l = l*cos(-ANGLE_OF_ROTATION * pi/180) + (r^l)*sin(-ANGLE_OF_ROTATION * pi/180);
+            u = r^l;
             break;
         case '5':
-            u = vector_rotate(u, l, ANGLE_OF_ROTATION);
-            r = vector_cross(l, u);
+            //u = vector_rotate(u, l, ANGLE_OF_ROTATION);
+            //r = vector_cross(l, u);
+            u = u*cos(ANGLE_OF_ROTATION * pi/180) + (l^u)*sin(ANGLE_OF_ROTATION * pi/180);
+            r = l^u;
             break;
         case '6':
-            u = vector_rotate(u, l, -ANGLE_OF_ROTATION);
-            r = vector_cross(l, u);
+            //u = vector_rotate(u, l, -ANGLE_OF_ROTATION);
+            //r = vector_cross(l, u);
+            u = u*cos(-ANGLE_OF_ROTATION * pi/180) + (l^u)*sin(-ANGLE_OF_ROTATION * pi/180);
+            r = l^u;
             break;
 		default:
 			break;
@@ -493,23 +477,29 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			pos = vector_subtract(pos, l);
+			//pos = vector_subtract(pos, l);
+			pos = pos - l;
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-			pos = vector_sum(pos, l);
+			//pos = vector_sum(pos, l);
+			pos = pos + l;
 			break;
 		case GLUT_KEY_RIGHT:
-			pos = vector_sum(pos, r);
+			//pos = vector_sum(pos, r);
+			pos = pos + r;
 			break;
 		case GLUT_KEY_LEFT:
-			pos = vector_subtract(pos, r);
+			//pos = vector_subtract(pos, r);
+			pos = pos - r;
 			break;
 
 		case GLUT_KEY_PAGE_UP:
-		    pos = vector_sum(pos, u);
+		    //pos = vector_sum(pos, u);
+		    pos = pos + u;
 			break;
 		case GLUT_KEY_PAGE_DOWN:
-		    pos = vector_subtract(pos, u);
+		    //pos = vector_subtract(pos, u);
+		    pos = pos - u;
 			break;
 
 		case GLUT_KEY_INSERT:
@@ -551,7 +541,7 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 	}
 }
 
-
+/// ------------------ display functions ------------------ ///
 
 void display(){
 
@@ -574,10 +564,6 @@ void display(){
 	//2. where is the camera looking?
 	//3. Which direction is the camera's UP direction?
 
-	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
-	//gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
-	//gluLookAt(0,0,200,	0,0,0,	0,1,0);
-
     gluLookAt(pos.x, pos.y, pos.z,  pos.x + l.x, pos.y + l.y, pos.z + l.z,   u.x, u.y, u.z);
 
 	//again select MODEL-VIEW
@@ -590,18 +576,7 @@ void display(){
 	//add objects
 
 	drawAxes();
-	drawGrid();
 
-    //glColor3f(1,0,0);
-    //drawSquare(10);
-
-    //drawSS();
-
-    //drawCircle(30,24);
-
-    //drawCone(20,50,24);
-
-	//drawCylinderOneFourth(radius, 25);
 	drawWholeSphere();
 	drawSides();
 	drawAllCylinders();
@@ -612,18 +587,12 @@ void display(){
 
 
 void animate(){
-	angle+=0.05;
-	//codes for any changes in Models, Camera
 	glutPostRedisplay();
 }
 
 void init(){
 	//codes for initialization
-	drawgrid=0;
 	drawaxes=1;
-	cameraHeight=150.0;
-	cameraAngle=1.0;
-	angle=0;
 
     // initializing camera position
 	pos.x = 100;
@@ -641,11 +610,9 @@ void init(){
 	r.z = 0;
 
 	// initializing look direction
-	l = vector_cross(u, r);
-	//l.x = -1/sqrt(2);
-	//l.y = -1/sqrt(2);
-	//l.z = 0;
+	l = u ^ r;
 
+    // initializing radius
 	radius = 0;
 
 	//clear the screen
@@ -668,13 +635,16 @@ void init(){
 	//far distance
 }
 
+
+/// ------------------------- main function --------------------- ///
+
 int main(int argc, char **argv){
 	glutInit(&argc,argv);
 	glutInitWindowSize(500, 500);
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
-	glutCreateWindow("My OpenGL Program");
+	glutCreateWindow("Sphere Cube Transformation");
 
 	init();
 
